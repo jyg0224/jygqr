@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>QR 붙여넣기 → 링크 추출 + TinyURL</title>
+  <script src="https://unpkg.com/jsqr"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    #dropzone {
+      border: 2px dashed #888;
+      padding: 2rem;
+      text-align: center;
+      color: #666;
+    }
+    #output { margin-top: 2rem; }
+    canvas { display: none; }
+  </style>
+</head>
+<body>
+  <h2>📸 QR 이미지 붙여넣기</h2>
+  <p><strong>Ctrl + V</strong>로 QR 이미지를 붙여넣으면 링크를 자동 추출하고 TinyURL로 줄여줍니다.</p>
+
+  <div id="dropzone">여기에 Ctrl+V로 QR 이미지를 붙여넣으세요</div>
+  <canvas id="canvas"></canvas>
+  <div id="output"></div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const output = document.getElementById('output');
+
+    document.addEventListener('paste', async (event) => {
+      const items = event.clipboardData.items;
+      for (const item of items) {
+        if (item.type.indexOf("image") !== -1) {
+          const file = item.getAsFile();
+          const img = new Image();
+          img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code) {
+              const url = code.data;
+              output.innerHTML = `<p>🔗 QR에서 추출한 링크:<br><a href="${url}" target="_blank">${url}</a></p>`;
+              fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`)
+                .then(res => res.text())
+                .then(shortUrl => {
+                  output.innerHTML += `<p>✂️ TinyURL:<br><a href="${shortUrl}" target="_blank">${shortUrl}</a></p>`;
+                });
+            } else {
+              output.innerHTML = `<p style="color:red;">😢 QR 코드 인식 실패</p>`;
+            }
+          };
+          img.src = URL.createObjectURL(file);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
