@@ -49,72 +49,91 @@
     <div id="output"></div>
   </div>
 
-<script>
-  function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-      alert("📋 복사 완료!");
-    }).catch(err => {
-      alert("복사 실패 😢");
-      console.error(err);
-    });
-  }
-
-  function shortenLink() {
-    const url = document.getElementById('longUrl').value;
-    if (!url) return;
-    fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`)
-      .then(res => res.text())
-      .then(short => {
-        document.getElementById('shortResult').innerHTML = `
-          ✅ 짧은 링크: 
-          <a href="${short}" target="_blank">${short}</a>
-          <button onclick="copyToClipboard('${short}')">복사</button>
-        `;
+  <script>
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("📋 복사 완료!");
+      }).catch(err => {
+        alert("복사 실패 😢");
+        console.error(err);
       });
-  }
+    }
 
-  function generateQR() {
-    const url = document.getElementById('qrInput').value;
-    if (!url) return;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
-    document.getElementById('qrOutput').innerHTML = `<img src="${qrUrl}" alt="QR Code">`;
-  }
+    async function copyQRImage() {
+      const img = document.getElementById('qrImage');
+      const response = await fetch(img.src);
+      const blob = await response.blob();
 
-  const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d');
-  const output = document.getElementById('output');
-
-  document.addEventListener('paste', async (event) => {
-    const items = event.clipboardData.items;
-    for (const item of items) {
-      if (item.type.indexOf("image") !== -1) {
-        const file = item.getAsFile();
-        const img = new Image();
-        img.onload = async () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          if (code) {
-            const url = code.data;
-            output.innerHTML = `<p>🔍 QR에서 추출한 링크:<br><a href="${url}" target="_blank">${url}</a></p>`;
-            const shortRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`);
-            const shortUrl = await shortRes.text();
-            output.innerHTML += `
-              <p>✂️ 줄인 링크:<br>
-                <a href="${shortUrl}" target="_blank">${shortUrl}</a>
-                <button onclick="copyToClipboard('${shortUrl}')">복사</button>
-              </p>`;
-          } else {
-            output.innerHTML = `<p style="color:red;">❌ QR 코드 인식 실패</p>`;
-          }
-        };
-        img.src = URL.createObjectURL(file);
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ [blob.type]: blob })
+        ]);
+        alert("✅ QR 이미지가 복사되었습니다!");
+      } catch (err) {
+        alert("❌ 이미지 복사 실패 😢");
+        console.error(err);
       }
     }
-  });
-</script>
+
+    function shortenLink() {
+      const url = document.getElementById('longUrl').value;
+      if (!url) return;
+      fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`)
+        .then(res => res.text())
+        .then(short => {
+          document.getElementById('shortResult').innerHTML = `
+            ✅ 짧은 링크: 
+            <a href="${short}" target="_blank">${short}</a>
+            <button onclick="copyToClipboard('${short}')">복사</button>
+          `;
+        });
+    }
+
+    function generateQR() {
+      const url = document.getElementById('qrInput').value;
+      if (!url) return;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+      document.getElementById('qrOutput').innerHTML = `
+        <img id="qrImage" src="${qrUrl}" alt="QR Code">
+        <br>
+        <button onclick="copyQRImage()">📋 QR 이미지 복사</button>
+      `;
+    }
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const output = document.getElementById('output');
+
+    document.addEventListener('paste', async (event) => {
+      const items = event.clipboardData.items;
+      for (const item of items) {
+        if (item.type.indexOf("image") !== -1) {
+          const file = item.getAsFile();
+          const img = new Image();
+          img.onload = async () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code) {
+              const url = code.data;
+              output.innerHTML = `<p>🔍 QR에서 추출한 링크:<br><a href="${url}" target="_blank">${url}</a></p>`;
+              const shortRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`);
+              const shortUrl = await shortRes.text();
+              output.innerHTML += `
+                <p>✂️ 줄인 링크:<br>
+                  <a href="${shortUrl}" target="_blank">${shortUrl}</a>
+                  <button onclick="copyToClipboard('${shortUrl}')">복사</button>
+                </p>`;
+            } else {
+              output.innerHTML = `<p style="color:red;">❌ QR 코드 인식 실패</p>`;
+            }
+          };
+          img.src = URL.createObjectURL(file);
+        }
+      }
+    });
+  </script>
 </body>
 </html>
-<!-- force rebuild -->
