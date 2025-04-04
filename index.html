@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>QR & TinyURL 통합 도구</title>
   <script src="https://unpkg.com/jsqr"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -46,53 +47,44 @@
       margin: 0.5rem 0;
       font-size: 1rem;
     }
-    button, a.download-btn {
+    button {
       padding: 0.5rem 1rem;
       font-size: 1rem;
-      margin-left: 0.5rem;
-      text-decoration: none;
+      margin: 0.5rem 0.25rem 0 0;
     }
     .section {
       margin-bottom: 3rem;
     }
 
-    /* ✅ 모바일 대응 스타일 */
     @media (max-width: 600px) {
       body {
         padding: 1rem;
       }
-
       h1 {
         flex-direction: column;
         align-items: flex-start;
       }
-
       h1 small {
         margin-top: 0.5rem;
         margin-left: 0;
       }
-
       input[type="text"] {
         font-size: 0.95rem;
       }
-
-      button, a.download-btn {
+      button {
         display: block;
         width: 100%;
         margin: 0.5rem 0;
         font-size: 1rem;
       }
-
       #output img, .qr-preview, #qrOutput img {
         max-width: 100%;
         height: auto;
       }
-
       canvas {
         width: 100% !important;
         height: auto !important;
       }
-
       #dropzone {
         font-size: 0.95rem;
       }
@@ -144,7 +136,6 @@
       const img = document.getElementById('qrImage');
       const response = await fetch(img.src);
       const blob = await response.blob();
-
       try {
         await navigator.clipboard.write([
           new ClipboardItem({ [blob.type]: blob })
@@ -154,6 +145,24 @@
         alert("❌ 이미지 복사 실패 😢");
         console.error(err);
       }
+    }
+
+    async function downloadQRAsPDF() {
+      const { jsPDF } = window.jspdf;
+      const img = document.getElementById('qrImage');
+      if (!img) return alert("QR 이미지가 없습니다.");
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imgData = canvas.toDataURL('image/png');
+
+      const pdf = new jsPDF();
+      pdf.text("🔗 QR 코드", 15, 20);
+      pdf.addImage(imgData, 'PNG', 15, 30, 80, 80);
+      pdf.save("qr-code.pdf");
     }
 
     function shortenLink() {
@@ -178,7 +187,7 @@
         <img id="qrImage" src="${qrUrl}" alt="QR Code">
         <br>
         <button onclick="copyQRImage()">📋 QR 이미지 복사</button>
-        <a class="download-btn" href="${qrUrl}" download="qr-code.png">⬇️ QR 다운로드</a>
+        <button onclick="downloadQRAsPDF()">⬇️ QR PDF 다운로드</button>
       `;
     }
 
