@@ -137,35 +137,50 @@
       }
     }
 
-    async function downloadQRAsPDF() {
+    function downloadQRAsPDF() {
       const img = document.getElementById('qrImage');
       if (!img) return alert("QR 이미지가 없습니다.");
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF();
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const imgData = canvas.toDataURL('image/png');
-      pdf.text("🔗 QR 코드", 15, 20);
-      pdf.addImage(imgData, 'PNG', 15, 30, 80, 80);
-      pdf.save("qr-code.pdf");
+
+      const waitImg = new Image();
+      waitImg.crossOrigin = "Anonymous";
+      waitImg.src = img.src;
+
+      waitImg.onload = () => {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        const canvas = document.createElement('canvas');
+        canvas.width = waitImg.naturalWidth;
+        canvas.height = waitImg.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(waitImg, 0, 0);
+        const imgData = canvas.toDataURL('image/png');
+        pdf.text("🔗 QR 코드", 15, 20);
+        pdf.addImage(imgData, 'PNG', 15, 30, 80, 80);
+        pdf.save("qr-code.pdf");
+      };
     }
 
     function downloadQRAsJPEG() {
       const img = document.getElementById('qrImage');
       if (!img) return alert("QR 이미지가 없습니다.");
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const jpegData = canvas.toDataURL("image/jpeg");
-      const link = document.createElement("a");
-      link.href = jpegData;
-      link.download = "qr-code.jpg";
-      link.click();
+
+      const waitImg = new Image();
+      waitImg.crossOrigin = "Anonymous";
+      waitImg.src = img.src;
+
+      waitImg.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = waitImg.naturalWidth;
+        canvas.height = waitImg.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(waitImg, 0, 0);
+
+        const jpegData = canvas.toDataURL("image/jpeg");
+        const link = document.createElement("a");
+        link.href = jpegData;
+        link.download = "qr-code.jpg";
+        link.click();
+      };
     }
 
     function shortenLink() {
